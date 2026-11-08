@@ -1,9 +1,9 @@
 [build]
+  command = "npm run build"
   publish = "wwwroot"
 
-[[redirects]]
-  from = "/api/*"
-  to = "https://REPLACE-WITH-RAILWAY-DOMAIN.up.railway.app/api/:splat"
-  status = 200
-  force = true
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  included_files = ["releases/*.jar"]
 
