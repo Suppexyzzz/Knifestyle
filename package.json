@@ -1,0 +1,13 @@
+{
+  "name": "knifestyle-netlify",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": { "build": "node -e \"console.log('KnifeStyle Netlify API ready')\"" },
+  "dependencies": {
+    "@netlify/database": "latest",
+    "@netlify/functions": "^3.1.10",
+    "postgres": "^3.4.7"
+  }
+}
+
