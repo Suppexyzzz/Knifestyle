@@ -1,13 +1,11 @@
-# KnifeStyle License Server
+# KnifeStyle
 
-ASP.NET Core 8 license API and static admin/registration site.
+KnifeStyle admin and registration website with a serverless license API.
 
-## Railway
+## Netlify deployment
 
-Deploy this repository with the root `Dockerfile`. Attach a persistent volume at `/data` so license keys and accounts survive deploys. Set `KNIFESTYLE_SETUP_KEY` as a private service variable before first use. Open the public site and create the owner account through the setup panel; never commit the setup key or `data/license-data.json`.
+The site publishes `wwwroot`; `netlify/functions/api.ts` keeps the existing `/api/*` endpoints for the website and loader. Netlify Database provisions PostgreSQL and applies the schema in `netlify/database/migrations`. The initial JAR is bundled privately with the API function and copied into the database on first use, so it is not exposed as a public static file.
 
-The image seeds its initial mod release from `releases/knifestyle-1.0.0.jar`.
+Before publishing, create a secret environment variable named `KNIFESTYLE_SETUP_KEY` in Netlify with the Functions runtime scope. Open the deployed site once to initialize the Owner account through its setup panel. The setup key is only needed for that initial creation; after the Owner exists, remove the variable.
 
-## Netlify
-
-The Netlify site publishes `wwwroot`. The `/api/*` rewrite in `netlify.toml` must target the public HTTPS Railway service domain.
+The admin release upload endpoint accepts JAR files up to 4.5 MB to stay within Netlify's binary function request limit.
