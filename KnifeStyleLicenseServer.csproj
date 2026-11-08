@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <DefaultItemExcludes>$(DefaultItemExcludes);publish/**;site-publish/**;deploy/**</DefaultItemExcludes>
+    <AssemblyName>KnifeStyleLicenseServer</AssemblyName>
+    <RootNamespace>KnifeStyleLicenseServer</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="releases\*.jar" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
+
