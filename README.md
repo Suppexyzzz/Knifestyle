@@ -9,3 +9,4 @@ The site publishes `wwwroot`; `netlify/functions/api.ts` keeps the existing `/ap
 Before publishing, create a secret environment variable named `KNIFESTYLE_SETUP_KEY` in Netlify with the Functions runtime scope. Open the deployed site once to initialize the Owner account through its setup panel. The setup key is only needed for that initial creation; after the Owner exists, remove the variable.
 
 The admin release upload endpoint accepts JAR files up to 4.5 MB to stay within Netlify's binary function request limit.
+
