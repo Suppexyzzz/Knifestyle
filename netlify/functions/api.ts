@@ -23,14 +23,14 @@ function db() {
 
 export const config: Config = { path: "/api/*" };
 
-export default async (request: Request, _context: Context): Promise<Response> => {
+export default async (request: Request, context: Context): Promise<Response> => {
   try {
     const parts = new URL(request.url).pathname.replace(/^\/api\/?/, "").split("/").filter(Boolean).map(decodeURIComponent);
     const method = request.method.toUpperCase();
     if (parts[0] === "status" && method === "GET") return await statusResponse();
     if (parts[0] === "admin" && parts[1] === "setup" && method === "POST") return await setupOwner(await readJson(request));
-    if (parts[0] === "auth" && parts[1] === "register" && method === "POST") return await register(request, await readJson(request));
-    if (parts[0] === "auth" && parts[1] === "login" && method === "POST") return await login(request, await readJson(request));
+    if (parts[0] === "auth" && parts[1] === "register" && method === "POST") return await register(request, await readJson(request), context.ip);
+    if (parts[0] === "auth" && parts[1] === "login" && method === "POST") return await login(request, await readJson(request), context.ip);
     if (parts[0] === "loader" && parts[1] === "authorize" && method === "POST") return await authorizeDevice(request, await readJson(request));
     if (parts[0] === "loader" && parts[1] === "mod" && method === "GET") return await downloadMod(request);
     if (parts[0] === "admin" && parts[1] === "accounts" && parts.length === 2 && method === "GET") return await listAccounts(request);
@@ -78,8 +78,8 @@ async function setupOwner(body: any) {
   }
 }
 
-async function register(request: Request, body: any) {
-  if (!(await allowAttempt(request, "register"))) return json({ error: "Zu viele Registrierungen. Bitte warte einige Minuten." }, 429);
+async function register(request: Request, body: any, clientIp: string) {
+  if (!(await allowAttempt(clientIp, "register"))) return json({ error: "Zu viele Registrierungen. Bitte warte einige Minuten." }, 429);
   const validation = validateCredentials(body.username, body.password);
   if (validation) return json({ error: validation }, 400);
   if (typeof body.licenseKey !== "string" || !body.licenseKey.trim()) return json({ error: "Lizenzschlüssel erforderlich." }, 400);
@@ -108,8 +108,8 @@ async function register(request: Request, body: any) {
   }
 }
 
-async function login(request: Request, body: any) {
-  if (!(await allowAttempt(request, "login"))) return json({ error: "Zu viele Login-Versuche. Warte einige Minuten." }, 429);
+async function login(request: Request, body: any, clientIp: string) {
+  if (!(await allowAttempt(clientIp, "login"))) return json({ error: "Zu viele Login-Versuche. Warte einige Minuten." }, 429);
   const userKey = normalizeUser(body.username);
   const rows = await db()`SELECT * FROM accounts WHERE username_key = ${userKey} LIMIT 1`;
   const account = rows[0];
@@ -118,7 +118,7 @@ async function login(request: Request, body: any) {
   const token = randomBytes(48).toString("base64url");
   const expires = new Date(Date.now() + SESSION_TTL_MS);
   await db()`INSERT INTO login_sessions (token_hash, username_key, expires_utc) VALUES (${hash(token)}, ${userKey}, ${expires})`;
-  await clearAttempts(request, "login");
+  await clearAttempts(clientIp, "login");
   return json({ accessToken: token, username: account.username, role: account.is_admin ? "admin" : "user", isOwner: account.is_owner, expiresUtc: expires });
 }
 
@@ -270,9 +270,8 @@ async function authorizedAccount(request: Request, adminOnly: boolean) {
   return account;
 }
 
-async function allowAttempt(request: Request, kind: string) {
-  const ip = request.headers.get("x-nf-client-connection-ip") ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const bucket = `${kind}:${hash(ip)}`;
+async function allowAttempt(ip: string, kind: string) {
+  const bucket = `${kind}:${hash(ip || "unknown")}`;
   const rows = await db()`INSERT INTO auth_attempts (bucket, started_utc, attempt_count) VALUES (${bucket}, NOW(), 1)
     ON CONFLICT (bucket) DO UPDATE SET
       started_utc = CASE WHEN auth_attempts.started_utc < NOW() - INTERVAL '5 minutes' THEN NOW() ELSE auth_attempts.started_utc END,
@@ -281,9 +280,8 @@ async function allowAttempt(request: Request, kind: string) {
   return Number(rows[0]?.attempt_count ?? 99) <= 8;
 }
 
-async function clearAttempts(request: Request, kind: string) {
-  const ip = request.headers.get("x-nf-client-connection-ip") ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  await db()`DELETE FROM auth_attempts WHERE bucket = ${`${kind}:${hash(ip)}`}`;
+async function clearAttempts(ip: string, kind: string) {
+  await db()`DELETE FROM auth_attempts WHERE bucket = ${`${kind}:${hash(ip || "unknown")}`}`;
 }
 
 async function passwordParts(password: string) {
