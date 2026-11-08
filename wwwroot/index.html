@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>KnifeStyle · Admin</title>
+  <style>
+    :root{color-scheme:dark;--bg:#141414;--panel:#171717;--panel2:#232323;--line:#303030;--text:#c1c1c1;--muted:#8f8f8f;--lime:#7bc215;--red:#df6565}
+    *{box-sizing:border-box}body{margin:0;background:#0d0d0d;color:var(--text);font:12px Verdana,Arial,sans-serif;min-height:100vh}
+    .shell{max-width:1100px;margin:32px auto;background:var(--bg);border:1px solid #3b3b3b;box-shadow:0 14px 45px #0008;min-height:650px;position:relative}
+    .shell:before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,#3bafde,#ca46cd,#c9e33a)}
+    header{height:58px;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 22px;justify-content:space-between;background:#1a1a1a}
+    .brand{font-weight:bold;font-size:15px;color:var(--lime);letter-spacing:1.5px}.sub{color:var(--muted);font-size:11px}
+    main{padding:22px}.login{width:330px;margin:92px auto;padding:22px;border:1px solid var(--line);background:var(--panel)}
+    h2{font-size:12px;color:var(--text);margin:0 0 18px;font-weight:bold}h3{font-size:11px;color:var(--muted);margin:0 0 13px}
+    input,button,select{font:inherit}input,select{height:31px;background:#0c0c0c;border:1px solid #404040;color:var(--text);padding:0 9px;outline:none}input{width:100%;margin:0 0 10px}select{min-width:0;flex:1}input:focus,select:focus{border-color:var(--lime)}
+    button{background:linear-gradient(#292929,#191919);border:1px solid #080808;box-shadow:inset 0 0 0 1px #303030;color:var(--text);height:30px;padding:0 13px;cursor:pointer;font-weight:bold}button:hover{color:var(--lime);border-color:#526a32}button.primary{color:var(--lime);background:linear-gradient(#2a381b,#18200f);border-color:#32461b}button.danger:hover{color:var(--red)}button:disabled{opacity:.5;cursor:wait}
+    .row{display:flex;gap:10px;align-items:center}.row input{margin:0}.grid{display:grid;grid-template-columns:1fr 300px;gap:14px}.card{background:var(--panel);border:1px solid var(--line);padding:16px;min-width:0}.card h2{border-bottom:1px solid #282828;padding-bottom:12px}
+    .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.badge{color:var(--lime);border:1px solid #4b6f1f;padding:5px 8px;background:#17220d}
+    table{border-collapse:collapse;width:100%;font-size:11px}th,td{text-align:left;padding:9px 7px;border-bottom:1px solid #292929;vertical-align:middle}th{color:var(--muted);font-weight:normal}td.actions{white-space:nowrap}td.actions button{height:24px;padding:0 7px;margin:1px;font-size:10px}
+    .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.formgrid input{margin:0}.formgrid .full{grid-column:1/-1}.fieldlabel{color:var(--muted);font-size:10px;margin:8px 0 5px}.status{min-height:20px;color:var(--muted);padding-top:11px}.status.ok{color:var(--lime)}.status.err{color:var(--red)}
+    .hidden{display:none!important}.muted{color:var(--muted)}.release{font-size:11px;line-height:1.8;overflow-wrap:anywhere}.account{font-weight:bold;color:var(--lime)}.foot{border-top:1px solid var(--line);padding:12px 22px;color:#696969;font-size:10px}
+    @media(max-width:800px){.shell{margin:0;min-height:100vh}.grid{grid-template-columns:1fr}.login{margin:60px auto}.formgrid{grid-template-columns:1fr}main{padding:13px}table{font-size:10px}th:nth-child(5),td:nth-child(5){display:none}}
+  </style>
+</head>
+<body><div class="shell">
+  <header><div class="brand">KNIFESTYLE <span class="sub">/ LICENSE ADMIN</span></div><div id="who" class="sub"></div></header>
+  <main>
+    <section id="login" class="login hidden">
+      <h2>Admin sign in</h2>
+      <input id="loginUser" autocomplete="username" placeholder="Username">
+      <input id="loginPass" type="password" autocomplete="current-password" placeholder="Password">
+      <button class="primary" style="width:100%" onclick="login()">Login</button>
+      <div class="sub" style="margin-top:12px;text-align:center">Neu hier? <a href="/register.html" style="color:var(--lime)">User-Konto registrieren</a></div>
+      <div id="setup" class="hidden" style="margin-top:22px;border-top:1px solid var(--line);padding-top:16px">
+        <h3>Besitzerkonto einrichten</h3>
+        <div class="sub" style="line-height:1.6;margin-bottom:10px">Das erste Konto wird dein dauerhaftes Owner- und Admin-Konto. Weitere Konten sind standardmäßig User; Adminrechte kannst du später hier vergeben.</div>
+        <input id="setupKey" type="password" placeholder="Setup key">
+        <input id="setupUser" placeholder="Dein Username">
+        <input id="setupPass" type="password" placeholder="Dein Passwort (min. 10 Zeichen)">
+        <button style="width:100%" onclick="setupAdmin()">Owner-Konto erstellen</button>
+      </div>
+      <div id="loginStatus" class="status"></div>
+    </section>
+
+    <section id="dashboard" class="hidden">
+      <div class="toolbar"><div><span class="account" id="accountName"></span><span class="sub"> · Accounts, Geräte und Mod-Version</span></div><button onclick="logout()">Logout</button></div>
+      <div class="grid">
+        <section class="card">
+          <div class="toolbar"><h2 style="margin:0">Lizenzen</h2><button onclick="loadAccounts()">Refresh</button></div>
+          <table><thead><tr><th>Account / Rolle</th><th>Status</th><th>Ablauf</th><th>Gerät</th><th>Zuletzt online</th><th>Aktionen</th></tr></thead><tbody id="accounts"></tbody></table>
+          <div id="accountStatus" class="status"></div>
+        </section>
+        <aside>
+          <section class="card" style="margin-bottom:14px">
+            <h2>Lizenzschlüssel erstellen</h2>
+            <div class="sub" style="line-height:1.6;margin-bottom:10px">Ein Schlüssel kann genau einmal verwendet werden. Die Laufzeit beginnt bei der Registrierung.</div>
+            <div class="row"><select id="keyDuration" aria-label="Lizenzlaufzeit"><option value="month_1">1 Monat</option><option value="months_3">3 Monate</option><option value="year_1">1 Jahr</option><option value="lifetime">Lifetime</option></select><button class="primary" onclick="createLicenseKey()">Schlüssel erstellen</button></div>
+            <div id="newKeyBox" class="hidden" style="margin-top:10px"><div class="fieldlabel">Neuer Schlüssel – jetzt kopieren und weitergeben</div><div class="row"><input id="newKeyValue" readonly><button onclick="copyLicenseKey()">Kopieren</button></div></div>
+            <div id="keyStatus" class="status"></div>
+            <table><thead><tr><th>Laufzeit</th><th>Erstellt</th><th>Status</th><th></th></tr></thead><tbody id="licenseKeys"></tbody></table>
+          </section>
+          <section class="card">
+            <h2>Mod-Release</h2><div id="releaseInfo" class="release muted">Lade…</div>
+            <div class="fieldlabel">Neue JAR hochladen</div><input id="releaseFile" type="file" accept=".jar">
+            <input id="releaseVersion" placeholder="Version, z. B. 1.0.0">
+            <button onclick="uploadRelease()">Release veröffentlichen</button>
+            <div id="releaseStatus" class="status"></div>
+          </section>
+        </aside>
+      </div>
+    </section>
+  </main>
+  <div class="foot">KnifeStyle License Service · Konten benötigen eine gültige Lizenz und werden an ein Gerät gebunden.</div>
+</div>
+<script>
+let token=sessionStorage.getItem('ksAdminToken')||'';
+let isOwner=sessionStorage.getItem('ksAdminOwner')==='true';
+const $=id=>document.getElementById(id);
+function setStatus(id,text,ok=false){const el=$(id);el.textContent=text;el.className='status '+(ok?'ok':'err')}
+async function call(path,options={}){options.headers={...(options.headers||{}),...(token?{Authorization:'Bearer '+token}:{})};const r=await fetch(path,options);const body=await r.text();let data={};try{data=body?JSON.parse(body):{}}catch{}if(!r.ok)throw Error(data.error||('HTTP '+r.status));return data}
+async function init(){try{const s=await fetch('/api/status').then(r=>r.json());if(s.setupAvailable)$('setup').classList.remove('hidden');if(s.release){$('releaseInfo').innerHTML=`<b>${esc(s.release.version)}</b><br>SHA-256: ${esc(s.release.sha256)}<br>Stand: ${new Date(s.release.updatedUtc).toLocaleString()}`}else $('releaseInfo').textContent='Noch kein Release.';}catch{}if(token){$('login').classList.add('hidden');$('dashboard').classList.remove('hidden');loadAccounts()}else $('login').classList.remove('hidden')}
+async function login(){try{const data=await call('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:$('loginUser').value,password:$('loginPass').value})});if(data.role!=='admin')throw Error('Dieses Konto hat keine Admin-Rechte.');token=data.accessToken;isOwner=!!data.isOwner;sessionStorage.setItem('ksAdminToken',token);sessionStorage.setItem('ksAdminOwner',String(isOwner));$('accountName').textContent=data.username;$('who').textContent=(isOwner?'Owner/Admin: ':'Admin: ')+data.username;$('login').classList.add('hidden');$('dashboard').classList.remove('hidden');await loadAccounts()}catch(e){setStatus('loginStatus',e.message)}}
+async function setupAdmin(){try{await call('/api/admin/setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupKey:$('setupKey').value,username:$('setupUser').value,password:$('setupPass').value})});setStatus('loginStatus','Owner-Admin erstellt. Jetzt anmelden.',true);$('loginUser').value=$('setupUser').value;$('loginPass').value=$('setupPass').value}catch(e){setStatus('loginStatus',e.message)}}
+function logout(){token='';isOwner=false;sessionStorage.removeItem('ksAdminToken');sessionStorage.removeItem('ksAdminOwner');$('dashboard').classList.add('hidden');$('login').classList.remove('hidden');$('who').textContent=''}
+async function loadAccounts(){try{const rows=await call('/api/admin/accounts');$('accounts').innerHTML=rows.map(a=>{const role=a.isOwner?'OWNER · ADMIN':a.isAdmin?'ADMIN':'USER';const safe=escAttr(a.username);const roleButton=a.isOwner?'Owner geschützt':isOwner?`<button onclick="setRole('${safe}',${!a.isAdmin})">${a.isAdmin?'Zu User machen':'Admin erteilen'}</button>`:'';const controls=a.isOwner?'':`<button onclick="toggleLicense('${safe}',${!a.enabled})">${a.enabled?'Sperren':'Aktivieren'}</button><button onclick="resetDevice('${safe}')">Gerät</button><button class="danger" onclick="deleteAccount('${safe}')">Löschen</button>`;return `<tr><td>${esc(a.username)}<br><span class="muted">${role}</span></td><td>${a.enabled?'<span class="account">AKTIV</span>':'<span style="color:var(--red)">GESPERRT</span>'}</td><td>${a.expiresUtc?new Date(a.expiresUtc).toLocaleDateString():'∞'}</td><td>${a.deviceBound?'gebunden':'frei'}</td><td>${a.lastSeenUtc?new Date(a.lastSeenUtc).toLocaleString():'–'}</td><td class="actions">${roleButton}${controls}</td></tr>`}).join('');setStatus('accountStatus',`${rows.length} Accounts`,true);await loadLicenseKeys()}catch(e){setStatus('accountStatus',e.message)}}
+async function loadLicenseKeys(){try{const rows=await call('/api/admin/license-keys');const labels={month_1:'1 Monat',months_3:'3 Monate',year_1:'1 Jahr',lifetime:'Lifetime'};$('licenseKeys').innerHTML=rows.map(k=>`<tr><td>${labels[k.durationCode]||'Unbekannt'}</td><td>${new Date(k.createdUtc).toLocaleDateString()}</td><td>${k.redeemedUtc?'Eingelöst: '+esc(k.redeemedBy):'<span class="account">Unbenutzt</span>'}</td><td>${k.redeemedUtc?'':'<button class="danger" onclick="revokeLicenseKey(\''+escAttr(k.id)+'\')">Widerrufen</button>'}</td></tr>`).join('');}catch(e){setStatus('keyStatus',e.message)}}
+async function createLicenseKey(){try{const durationCode=$('keyDuration').value;const data=await call('/api/admin/license-keys',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({durationCode})});$('newKeyValue').value=data.licenseKey;$('newKeyBox').classList.remove('hidden');setStatus('keyStatus',`Schlüssel mit Laufzeit ${data.durationLabel} erstellt.`,true);await loadLicenseKeys()}catch(e){setStatus('keyStatus',e.message)}}
+async function copyLicenseKey(){try{await navigator.clipboard.writeText($('newKeyValue').value);setStatus('keyStatus','Schlüssel kopiert.',true)}catch{ $('newKeyValue').select();setStatus('keyStatus','Schlüssel markieren und kopieren.')}}
+async function revokeLicenseKey(id){if(!confirm('Unbenutzten Lizenzschlüssel widerrufen?'))return;try{await call('/api/admin/license-keys/'+encodeURIComponent(id),{method:'DELETE'});await loadLicenseKeys()}catch(e){setStatus('keyStatus',e.message)}}
+async function setRole(username,isAdmin){try{await call('/api/admin/accounts/'+encodeURIComponent(username)+'/role',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({isAdmin})});setStatus('accountStatus',isAdmin?'Adminrolle vergeben.':'Adminrolle entfernt.',true);await loadAccounts()}catch(e){setStatus('accountStatus',e.message)}}
+async function toggleLicense(username,enabled){try{await call('/api/admin/accounts/'+encodeURIComponent(username)+'/license',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})});await loadAccounts()}catch(e){setStatus('accountStatus',e.message)}}
+async function resetDevice(username){if(!confirm('Gerätebindung für '+username+' zurücksetzen?'))return;try{await call('/api/admin/accounts/'+encodeURIComponent(username)+'/reset-device',{method:'POST'});await loadAccounts()}catch(e){setStatus('accountStatus',e.message)}}
+async function deleteAccount(username){if(!confirm('Account '+username+' endgültig löschen?'))return;try{await call('/api/admin/accounts/'+encodeURIComponent(username),{method:'DELETE'});await loadAccounts()}catch(e){setStatus('accountStatus',e.message)}}
+async function uploadRelease(){const file=$('releaseFile').files[0],version=$('releaseVersion').value.trim();if(!file||!version){setStatus('releaseStatus','JAR und Versionsname angeben.');return}const form=new FormData();form.append('file',file);form.append('version',version);try{const r=await fetch('/api/admin/release',{method:'POST',headers:{Authorization:'Bearer '+token},body:form});const d=await r.json();if(!r.ok)throw Error(d.error||'Upload fehlgeschlagen');$('releaseInfo').innerHTML=`<b>${esc(d.version)}</b><br>SHA-256: ${esc(d.sha256)}<br>Stand: ${new Date(d.updatedUtc).toLocaleString()}`;setStatus('releaseStatus','Release veröffentlicht.',true)}catch(e){setStatus('releaseStatus',e.message)}}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function escAttr(s){return esc(s).replaceAll('`','')}
+init();
+</script></body></html>
+
